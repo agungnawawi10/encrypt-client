@@ -1,4 +1,5 @@
 import 'package:encryption_app/core/speech_to_text.dart' as stt;
+import 'package:encryption_app/core/theme.dart';
 import 'package:flutter/material.dart';
 
 class ChatMessage {
@@ -16,6 +17,7 @@ class ChatMessage {
 class EncryptScreen extends StatefulWidget {
   final TextEditingController controller;
   final String serverResponse;
+  final String currentUsername;
   final bool isStreaming;
   final VoidCallback onSendMessage;
   final VoidCallback onStartSpeech;
@@ -27,6 +29,7 @@ class EncryptScreen extends StatefulWidget {
     Key? key,
     required this.controller,
     required this.serverResponse,
+    required this.currentUsername,
     required this.isStreaming,
     required this.onSendMessage,
     required this.onStartSpeech,
@@ -57,16 +60,24 @@ class _EncryptScreenState extends State<EncryptScreen> {
         (messages.isEmpty ||
             messages.last.text != widget.serverResponse ||
             messages.last.isUser)) {
-      setState(() {
-        messages.add(
-          ChatMessage(
-            text: widget.serverResponse,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
-      _scrollToBottom();
+      final responseLines = widget.serverResponse.split('\n');
+      final senderLine = responseLines.isNotEmpty ? responseLines.first : '';
+      final sender = senderLine.startsWith('📤 From: ')
+          ? senderLine.replaceFirst('📤 From: ', '').trim()
+          : '';
+
+      if (sender.isNotEmpty && sender != widget.currentUsername) {
+        setState(() {
+          messages.add(
+            ChatMessage(
+              text: widget.serverResponse,
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+        });
+        _scrollToBottom();
+      }
     }
   }
 
@@ -109,24 +120,21 @@ class _EncryptScreenState extends State<EncryptScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-              ),
-            ),
-            SizedBox(width: 8),
-            Text("Encryption Chat"),
-          ],
-        ),
+        title: const Text("Encryption Chat"),
         centerTitle: false,
-        elevation: 1,
+        elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: AppTheme.textPrimary,
+        leading: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.successColor,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check, color: Colors.white, size: 14),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -134,17 +142,23 @@ class _EncryptScreenState extends State<EncryptScreen> {
           Expanded(
             child: messages.isEmpty
                 ? _buildEmptyState(context)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      return _buildChatBubble(context, messages[index]);
-                    },
+                : Container(
+                    color: AppTheme.backgroundColor,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        return _buildChatBubble(context, messages[index]);
+                      },
+                    ),
                   ),
           ),
           // Divider
-          Divider(height: 1),
+          Container(height: 1, color: AppTheme.borderColor),
           // Input Area
           _buildInputArea(context),
         ],
@@ -157,20 +171,33 @@ class _EncryptScreenState extends State<EncryptScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[300]),
-          SizedBox(height: 16),
-          Text(
-            "Mulai Percakapan",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.lightGray,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline,
+              size: 40,
+              color: AppTheme.textSecondary,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            "Ketik pesan atau gunakan voice untuk mulai",
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+          const SizedBox(height: 16),
+          const Text(
+            "Mulai Percakapan",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Ketik pesan atau gunakan voice untuk memulai",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -179,49 +206,63 @@ class _EncryptScreenState extends State<EncryptScreen> {
 
   Widget _buildChatBubble(BuildContext context, ChatMessage message) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: message.isUser
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!message.isUser)
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.grey[300],
-              child: Icon(Icons.smart_toy, size: 18, color: Colors.grey[700]),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.lightGray,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.smart_toy,
+                size: 16,
+                color: AppTheme.textSecondary,
+              ),
             ),
-          if (!message.isUser) SizedBox(width: 8),
+          if (!message.isUser) const SizedBox(width: 8),
           Flexible(
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: message.isUser
-                    ? Colors.orange.shade500
-                    : Colors.grey[200],
+                    ? AppTheme.accentColor
+                    : AppTheme.lightGray,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(18),
-                  topRight: Radius.circular(18),
-                  bottomLeft: Radius.circular(message.isUser ? 18 : 4),
-                  bottomRight: Radius.circular(message.isUser ? 4 : 18),
+                  topLeft: const Radius.circular(12),
+                  topRight: const Radius.circular(12),
+                  bottomLeft: Radius.circular(message.isUser ? 12 : 4),
+                  bottomRight: Radius.circular(message.isUser ? 4 : 12),
                 ),
               ),
               child: Text(
                 message.text,
                 style: TextStyle(
                   fontSize: 15,
-                  color: message.isUser ? Colors.white : Colors.black87,
+                  color: message.isUser ? Colors.white : AppTheme.textPrimary,
                   height: 1.4,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ),
-          if (message.isUser) SizedBox(width: 8),
+          if (message.isUser) const SizedBox(width: 8),
           if (message.isUser)
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.orange.shade500,
-              child: Icon(Icons.person, size: 18, color: Colors.white),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppTheme.accentColor,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, size: 16, color: Colors.white),
             ),
         ],
       ),
@@ -231,20 +272,23 @@ class _EncryptScreenState extends State<EncryptScreen> {
   Widget _buildInputArea(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Streaming Mode Indicator
             if (widget.isStreaming)
               Padding(
-                padding: EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    border: Border.all(color: Colors.green[300]!),
+                    color: AppTheme.successColor.withOpacity(0.1),
+                    border: Border.all(color: AppTheme.successColor),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -252,28 +296,29 @@ class _EncryptScreenState extends State<EncryptScreen> {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.successColor,
                           shape: BoxShape.circle,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        "Streaming Mode ON",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.green[700],
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          "Mode Streaming Aktif",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.successColor,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                      Spacer(),
                       GestureDetector(
                         onTap: widget.onToggleStreaming,
-                        child: Text(
+                        child: const Text(
                           "Matikan",
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.green[700],
+                            color: AppTheme.successColor,
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.underline,
                           ),
@@ -283,16 +328,17 @@ class _EncryptScreenState extends State<EncryptScreen> {
                   ),
                 ),
               ),
-            // Input Field
+            // Input Field with Actions
             Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.borderColor),
+                color: Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -305,63 +351,82 @@ class _EncryptScreenState extends State<EncryptScreen> {
                       maxLines: null,
                       minLines: 1,
                       textInputAction: TextInputAction.newline,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: "Ketik pesan...",
-                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        hintStyle: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 12,
                         ),
                       ),
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   // Microphone Button
                   Padding(
-                    padding: EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.only(right: 4),
                     child: IconButton(
                       icon: Icon(
                         stt.isListening ? Icons.stop : Icons.mic,
-                        color: stt.isListening ? Colors.red : Colors.grey[600],
+                        color: stt.isListening
+                            ? AppTheme.errorColor
+                            : AppTheme.textSecondary,
+                        size: 20,
                       ),
                       onPressed: stt.isListening
                           ? widget.onStopSpeech
                           : widget.onStartSpeech,
-                      tooltip: stt.isListening
-                          ? "Hentikan Rekam"
-                          : "Mulai Rekam",
+                      tooltip: stt.isListening ? "Stop" : "Microphone",
                     ),
                   ),
                   // Send Button
                   Padding(
-                    padding: EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.only(right: 8),
                     child: IconButton(
-                      icon: Icon(Icons.send, color: Colors.orange),
-                      onPressed: _sendMessage,
-                      tooltip: "Kirim Pesan",
+                      icon: const Icon(
+                        Icons.send,
+                        color: AppTheme.accentColor,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        _sendMessage();
+                      },
+                      tooltip: "Kirim",
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
             // Toggle Streaming Button
-            SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: widget.onToggleStreaming,
                 icon: Icon(
-                  widget.isStreaming ? Icons.stream : Icons.stop,
+                  widget.isStreaming ? Icons.stream : Icons.stop_circle,
                   size: 16,
                 ),
                 label: Text(
-                  widget.isStreaming ? "Streaming: ON" : "Streaming: OFF",
-                  style: TextStyle(fontSize: 13),
+                  widget.isStreaming
+                      ? "Streaming Mode: ON"
+                      : "Streaming Mode: OFF",
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 style: TextButton.styleFrom(
                   foregroundColor: widget.isStreaming
-                      ? Colors.green
-                      : Colors.grey[600],
+                      ? AppTheme.successColor
+                      : AppTheme.textSecondary,
                 ),
               ),
             ),

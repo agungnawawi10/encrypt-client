@@ -2,42 +2,69 @@
 
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'dart:async';
+import 'dart:convert';
 
 class AppConfig {
-  static const String serverName = "192.168.1.103";
+  static const String serverName = "192.168.1.105";
   static const String wsUrl = "ws://$serverName:8765";
   static const String baseUrl = "http://$serverName:8000/api";
 }
 
 class WebSocketService {
   WebSocketChannel? _channel;
-  final StreamController<String> _messageController = StreamController<String>.broadcast();
+  final StreamController<Map<String, dynamic>> _messageController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  bool _isConnected = false;
 
-  Stream<String> get messageStream => _messageController.stream;
+  Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
+  bool get isConnected => _isConnected;
 
-  void connect() {
+  void connect({String username = "Anonymous"}) {
     // Inisialisasi di sini supaya bisa dipanggil ulang jika error
     _channel = WebSocketChannel.connect(Uri.parse(AppConfig.wsUrl));
+    _isConnected = true;
+
+    // Send join message setelah connect
+    _sendJoinMessage(username);
 
     _channel!.stream.listen(
       (data) {
         print("Data diterima: $data");
-        _messageController.add(data.toString());
+        try {
+          final jsonData = jsonDecode(data.toString()) as Map<String, dynamic>;
+          _messageController.add(jsonData);
+        } catch (e) {
+          print("Error parsing JSON: $e");
+        }
       },
       onError: (error) {
         print("Koneksi Error: $error");
+        _isConnected = false;
         // Tunggu 5 detik lalu coba hubungkan lagi
-        Future.delayed(Duration(seconds: 5), () => connect());
+        Future.delayed(Duration(seconds: 5), () => connect(username: username));
       },
       onDone: () {
         print("Koneksi ditutup, mencoba hubungkan kembali...");
-        Future.delayed(Duration(seconds: 5), () => connect());
+        _isConnected = false;
+        Future.delayed(Duration(seconds: 5), () => connect(username: username));
       },
     );
   }
 
+  void _sendJoinMessage(String username) {
+    final joinMessage = jsonEncode({"type": "join", "username": username});
+    _channel?.sink.add(joinMessage);
+    print("Join message sent: $joinMessage");
+  }
+
   void sendMessage(String msg) {
-    _channel?.sink.add(msg);
+    if (!_isConnected) {
+      print("WebSocket not connected");
+      return;
+    }
+    final messagePayload = jsonEncode({"type": "message", "message": msg});
+    _channel?.sink.add(messagePayload);
+    print("Message sent: $messagePayload");
   }
 
   WebSocketChannel? get webSocket => _channel;

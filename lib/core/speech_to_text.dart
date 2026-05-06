@@ -1,6 +1,7 @@
 import 'package:encryption_app/core/websocket_network.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'dart:convert';
 
 SpeechToText speech = SpeechToText();
 bool isListening = false;
@@ -70,5 +71,5 @@ Future<void> stopListening() async {
 }
 
 void sendMessage(String text) {
-  wsService.webSocket?.sink.add(text);
+  wsService.sendMessage(text);
 }

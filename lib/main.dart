@@ -2,9 +2,12 @@
 
 import 'package:encryption_app/core/websocket_network.dart';
 import 'package:encryption_app/core/speech_to_text.dart' as stt;
+import 'package:encryption_app/core/theme.dart';
 import 'package:encryption_app/features/encrypt_screen.dart';
+import 'package:encryption_app/features/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -17,11 +20,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Encryption Chat',
+      theme: AppTheme.lightTheme,
+      home: const MyHomePage(title: 'Encryption Chat'),
     );
   }
 }
@@ -37,19 +38,31 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late TextEditingController controller;
   String serverResponse = "";
+  String senderName = "";
+  String plaintextMessage = "";
+  String encryptedMessage = "";
   bool isStreaming = false;
   Timer? debounceTimer;
+  String? _username;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     controller = TextEditingController();
-    _initializeWebSocket();
   }
 
-  void _initializeWebSocket() {
+  void _handleLogin(String username) {
+    setState(() {
+      _username = username;
+      _isLoggedIn = true;
+    });
+    _initializeWebSocket(username);
+  }
+
+  void _initializeWebSocket(String username) {
     // Initialize WebSocket connection
-    wsService.connect();
+    wsService.connect(username: username);
 
     // Initialize speech recognition
     stt.initSpeech().then((success) {
@@ -64,12 +77,22 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     // Listen to WebSocket messages menggunakan messageStream
-    wsService.messageStream.listen((message) {
+    wsService.messageStream.listen((jsonMessage) {
       setState(() {
-        serverResponse = message;
+        senderName = jsonMessage['sender'] ?? "Unknown";
+        plaintextMessage = jsonMessage['plaintext'] ?? "";
+        encryptedMessage = jsonMessage['encrypted'] ?? "";
+
+        // Format response untuk ditampilkan
+        serverResponse =
+            "📤 From: $senderName\n"
+            "📝 Plaintext: $plaintextMessage\n"
+            "🔐 Encrypted: $encryptedMessage";
       });
 
-      print("Encrypted dari server: $message");
+      print("Message dari $senderName:");
+      print("- Plaintext: $plaintextMessage");
+      print("- Encrypted: $encryptedMessage");
     });
   }
 
@@ -150,9 +173,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isLoggedIn) {
+      return LoginScreen(onLogin: _handleLogin);
+    }
+
     return EncryptScreen(
       controller: controller,
       serverResponse: serverResponse,
+      currentUsername: _username ?? '',
       isStreaming: isStreaming,
       onSendMessage: sendMessage,
       onStartSpeech: startSpeechToText,
