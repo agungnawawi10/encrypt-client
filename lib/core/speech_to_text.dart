@@ -1,6 +1,7 @@
 import 'package:encryption_app/core/websocket_network.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+// ignore: unused_import
 import 'dart:convert';
 
 SpeechToText speech = SpeechToText();

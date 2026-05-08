@@ -7,6 +7,7 @@ import 'package:encryption_app/features/encrypt_screen.dart';
 import 'package:encryption_app/features/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+// ignore: unused_import
 import 'dart:convert';
 
 void main() {

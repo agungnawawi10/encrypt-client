@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 class AppConfig {
-  static const String serverName = "192.168.1.105";
+  static const String serverName = "192.168.1.103";
   static const String wsUrl = "ws://$serverName:8765";
   static const String baseUrl = "http://$serverName:8000/api";
 }
