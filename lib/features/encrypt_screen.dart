@@ -132,7 +132,14 @@ class _EncryptScreenState extends State<EncryptScreen> {
               color: AppTheme.successColor,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 14),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/icon/icon_encrypt.png',
+                fit: BoxFit.cover,
+                width: 24,
+                height: 24,
+              ),
+            ),
           ),
         ),
       ),

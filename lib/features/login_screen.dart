@@ -4,7 +4,7 @@ import 'package:encryption_app/core/theme.dart';
 class LoginScreen extends StatefulWidget {
   final Function(String) onLogin;
 
-  const LoginScreen({Key? key, required this.onLogin}) : super(key: key);
+  const LoginScreen({super.key, required this.onLogin});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -72,10 +72,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: AppTheme.accentColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
-                    Icons.lock_outline,
-                    size: 40,
-                    color: Colors.white,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/icon/icon_encrypt.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),

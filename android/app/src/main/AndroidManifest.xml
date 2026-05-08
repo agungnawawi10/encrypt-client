@@ -4,7 +4,7 @@
     <application
         android:label="encryption_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="true"> <!-- untuk mencari nama laptop yang terhubung ke jaringan yang sama-->
         <activity
             android:name=".MainActivity"
