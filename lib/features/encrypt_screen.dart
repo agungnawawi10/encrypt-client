@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class ChatMessage {
   final String text;
   final bool isUser;
+  final bool isSystem;
   final DateTime timestamp;
 
   ChatMessage({
     required this.text,
     required this.isUser,
+    this.isSystem = false,
     required this.timestamp,
   });
 }
@@ -26,7 +28,7 @@ class EncryptScreen extends StatefulWidget {
   final Function(String) onTextChanged;
 
   const EncryptScreen({
-    Key? key,
+    super.key,
     required this.controller,
     required this.serverResponse,
     required this.currentUsername,
@@ -36,7 +38,7 @@ class EncryptScreen extends StatefulWidget {
     required this.onStopSpeech,
     required this.onToggleStreaming,
     required this.onTextChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<EncryptScreen> createState() => _EncryptScreenState();
@@ -55,16 +57,20 @@ class _EncryptScreenState extends State<EncryptScreen> {
   @override
   void didUpdateWidget(EncryptScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Tambah server response ke chat
-    if (widget.serverResponse.isNotEmpty &&
-        (messages.isEmpty ||
-            messages.last.text != widget.serverResponse ||
-            messages.last.isUser)) {
-      final responseLines = widget.serverResponse.split('\n');
-      final senderLine = responseLines.isNotEmpty ? responseLines.first : '';
-      final sender = senderLine.startsWith('📤 From: ')
-          ? senderLine.replaceFirst('📤 From: ', '').trim()
-          : '';
+    final responseChanged =
+        widget.serverResponse.isNotEmpty &&
+        widget.serverResponse != oldWidget.serverResponse;
+
+    if (!responseChanged) {
+      return;
+    }
+
+    final responseLines = widget.serverResponse.split('\n');
+    final firstLine = responseLines.isNotEmpty ? responseLines.first : '';
+    final isEncryptedMessage = firstLine.startsWith('📤 From: ');
+
+    if (isEncryptedMessage) {
+      final sender = firstLine.replaceFirst('📤 From: ', '').trim();
 
       if (sender.isNotEmpty && sender != widget.currentUsername) {
         setState(() {
@@ -78,7 +84,21 @@ class _EncryptScreenState extends State<EncryptScreen> {
         });
         _scrollToBottom();
       }
+      return;
     }
+
+    // Fallback untuk event backend lain seperti notifikasi join.
+    setState(() {
+      messages.add(
+        ChatMessage(
+          text: widget.serverResponse,
+          isUser: false,
+          isSystem: true,
+          timestamp: DateTime.now(),
+        ),
+      );
+    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -212,6 +232,30 @@ class _EncryptScreenState extends State<EncryptScreen> {
   }
 
   Widget _buildChatBubble(BuildContext context, ChatMessage message) {
+    if (message.isSystem) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.lightGray,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              message.text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -294,7 +338,7 @@ class _EncryptScreenState extends State<EncryptScreen> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.successColor.withOpacity(0.1),
+                    color: AppTheme.successColor.withValues(alpha: 0.1),
                     border: Border.all(color: AppTheme.successColor),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -343,7 +387,7 @@ class _EncryptScreenState extends State<EncryptScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

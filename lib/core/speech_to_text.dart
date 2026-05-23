@@ -1,63 +1,58 @@
-import 'package:encryption_app/core/websocket_network.dart';
+import 'dart:async';
+
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-// ignore: unused_import
-import 'dart:convert';
 
 SpeechToText speech = SpeechToText();
 bool isListening = false;
-String textResult = "";
+String textResult = '';
+
+typedef MessageSender = FutureOr<void> Function(String text);
+
+MessageSender? _messageSender;
+
+void setMessageSender(MessageSender? sender) {
+  _messageSender = sender;
+}
 
 Future<bool> initSpeech() async {
   try {
-    // Request microphone permission
     final status = await Permission.microphone.request();
 
     if (status.isDenied) {
-      print("Microphone permission denied");
       return false;
     }
 
     if (status.isPermanentlyDenied) {
-      print("Microphone permission permanently denied");
       openAppSettings();
       return false;
     }
 
     final available = await speech.initialize(
-      onError: (error) {
-        print("Speech init error: $error");
-      },
-      onStatus: (status) {
-        print("Speech status: $status");
-      },
+      onError: (error) {},
+      onStatus: (status) {},
     );
-    print("Speech initialized: $available");
     return available;
   } catch (e) {
-    print("Error initializing speech: $e");
     return false;
   }
 }
 
 Future<void> startListening() async {
   if (!speech.isAvailable) {
-    print("Speech recognition not available");
     return;
   }
 
   try {
     isListening = true;
-    textResult = "";
+    textResult = '';
 
     await speech.listen(
       onResult: (result) {
         textResult = result.recognizedWords;
-        print("Recognized: ${result.recognizedWords}");
       },
     );
   } catch (e) {
-    print("Error starting listening: $e");
     isListening = false;
   }
 }
@@ -67,10 +62,15 @@ Future<void> stopListening() async {
     await speech.stop();
     isListening = false;
   } catch (e) {
-    print("Error stopping listening: $e");
+    isListening = false;
   }
 }
 
-void sendMessage(String text) {
-  wsService.sendMessage(text);
+Future<void> sendMessage(String text) async {
+  final sender = _messageSender;
+  if (sender == null) {
+    return;
+  }
+
+  await sender(text);
 }

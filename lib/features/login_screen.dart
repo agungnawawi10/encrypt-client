@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppTheme.accentColor,
+                    color: AppTheme.backgroundColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: ClipRRect(
