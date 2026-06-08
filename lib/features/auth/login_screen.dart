@@ -1,5 +1,6 @@
 import 'package:encryption_app/core/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/session/session_manager.dart';
 import '../../core/theme.dart';
@@ -36,6 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Memicu browser/OS untuk menyimpan kredensial secara aman jika login sukses
+    TextInput.finishAutofillContext();
+
     await widget.sessionManager.login(
       username: _usernameController.text.trim(),
       password: _passwordController.text,
@@ -62,25 +66,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: AnimatedBuilder(
                   animation: widget.sessionManager,
                   builder: (context, _) {
-                    return Card(
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        side: const BorderSide(color: AppTheme.borderColor),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: AutofillGroup(
                         child: Form(
                           key: _formKey,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Icon(
-                                Icons.lock_outline,
-                                size: 44,
-                                color: AppTheme.accentColor,
+                              Image.asset(
+                                'assets/icon/icon_encrypt.png',
+                                height: 60,
+                                fit: BoxFit.contain,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -96,16 +94,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 24),
-                              if (widget.sessionManager.errorMessage != null)
+                              if (widget.sessionManager.errorMessage != null) ...[
                                 _ErrorBanner(
                                   message: widget.sessionManager.errorMessage!,
                                   onDismiss: widget.sessionManager.clearError,
                                 ),
-                              if (widget.sessionManager.errorMessage != null)
                                 const SizedBox(height: 16),
+                              ],
                               TextFormField(
                                 controller: _usernameController,
                                 enabled: !widget.sessionManager.isBusy,
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                autofillHints: const [AutofillHints.username],
                                 decoration: const InputDecoration(
                                   labelText: 'Username',
                                   prefixIcon: Icon(Icons.person_outline),
@@ -122,6 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 enabled: !widget.sessionManager.isBusy,
                                 obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [AutofillHints.password],
                                 decoration: InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: const Icon(Icons.key_outlined),
@@ -164,8 +169,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                             strokeWidth: 2.5,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
-                                                  Colors.white,
-                                                ),
+                                              Colors.white,
+                                            ),
                                           ),
                                         )
                                       : const Text('Login'),

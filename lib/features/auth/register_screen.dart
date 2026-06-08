@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/session/session_manager.dart';
 import '../../core/theme.dart';
@@ -38,6 +39,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    TextInput.finishAutofillContext();
+
     await widget.sessionManager.register(
       username: _usernameController.text.trim(),
       password: _passwordController.text,
@@ -64,25 +67,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: AnimatedBuilder(
                   animation: widget.sessionManager,
                   builder: (context, _) {
-                    return Card(
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        side: const BorderSide(color: AppTheme.borderColor),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: AutofillGroup(
                         child: Form(
                           key: _formKey,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Icon(
-                                Icons.person_add_alt_1_outlined,
-                                size: 44,
-                                color: AppTheme.accentColor,
+                              Image.asset(
+                                'assets/icon/icon_encrypt.png',
+                                height: 60,
+                                fit: BoxFit.contain,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -98,24 +95,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 24),
-                              if (widget.sessionManager.successMessage != null)
+                              if (widget.sessionManager.successMessage != null) ...[
                                 _SuccessBanner(
-                                  message:
-                                      widget.sessionManager.successMessage!,
+                                  message: widget.sessionManager.successMessage!,
                                   onDismiss: widget.sessionManager.clearSuccess,
                                 ),
-                              if (widget.sessionManager.successMessage != null)
                                 const SizedBox(height: 16),
-                              if (widget.sessionManager.errorMessage != null)
+                              ],
+                              if (widget.sessionManager.errorMessage != null) ...[
                                 _ErrorBanner(
                                   message: widget.sessionManager.errorMessage!,
                                   onDismiss: widget.sessionManager.clearError,
                                 ),
-                              if (widget.sessionManager.errorMessage != null)
                                 const SizedBox(height: 16),
+                              ],
                               TextFormField(
                                 controller: _usernameController,
                                 enabled: !widget.sessionManager.isBusy,
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                autofillHints: const [AutofillHints.newUsername],
                                 decoration: const InputDecoration(
                                   labelText: 'Username',
                                   prefixIcon: Icon(Icons.person_outline),
@@ -132,6 +133,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _passwordController,
                                 enabled: !widget.sessionManager.isBusy,
                                 obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.newPassword],
                                 decoration: InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: const Icon(Icons.key_outlined),
@@ -163,6 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _confirmPasswordController,
                                 enabled: !widget.sessionManager.isBusy,
                                 obscureText: _obscureConfirmPassword,
+                                textInputAction: TextInputAction.done,
                                 decoration: InputDecoration(
                                   labelText: 'Konfirmasi Password',
                                   prefixIcon: const Icon(
@@ -210,8 +214,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                             strokeWidth: 2.5,
                                             valueColor:
                                                 AlwaysStoppedAnimation<Color>(
-                                                  Colors.white,
-                                                ),
+                                              Colors.white,
+                                            ),
                                           ),
                                         )
                                       : const Text('Register'),
@@ -280,7 +284,7 @@ class _SuccessBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppTheme.successColor.withOpacity(0.08),
+      color: AppTheme.successColor.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(16),
       child: ListTile(
         dense: true,

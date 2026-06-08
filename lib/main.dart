@@ -16,7 +16,7 @@ Future<void> main() async {
 
   runApp(
     DevicePreview(
-      enabled: false,
+      enabled: true,
       tools: const [...DevicePreview.defaultTools],
       builder: (context) => MyApp(sessionManager: sessionManager),
     ),
